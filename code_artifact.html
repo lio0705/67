@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-Hant" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>老龍眼樹下的盛夏｜互動式圖文繪本</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Noto Serif TC & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <!-- Tone.js for gentle ambient chimes & interactive sound effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Noto Serif TC"', 'serif'],
+            sans: ['"Noto Sans TC"', 'sans-serif'],
+          },
+          colors: {
+            parchment: '#FDF8F0',
+            'warm-cream': '#F6EEDF',
+            'amber-sun': '#E08E45',
+            'longan-shell': '#9E6234',
+            'longan-pulp': '#F3F7EC',
+            'moss-green': '#4A6B48',
+            'deep-forest': '#2B4229',
+            'terracotta': '#B85A3A',
+            'ink-dark': '#2C241E',
+            'ink-muted': '#5C4F42',
+            'screen-night': '#111827',
+            'neon-cyan': '#38BDF8',
+          },
+          animation: {
+            'float-slow': 'float 6s ease-in-out infinite',
+            'sway': 'sway 5s ease-in-out infinite',
+            'pulse-soft': 'pulseSoft 3s ease-in-out infinite',
+            'shimmer': 'shimmer 2.5s linear infinite',
+          },
+          keyframes: {
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-10px)' },
+            },
+            sway: {
+              '0%, 100%': { transform: 'rotate(-1.5deg)' },
+              '50%': { transform: 'rotate(1.5deg)' },
+            },
+            pulseSoft: {
+              '0%, 100%': { opacity: 0.75, transform: 'scale(1)' },
+              '50%': { opacity: 1, transform: 'scale(1.03)' },
+            },
+            shimmer: {
+              '0%': { backgroundPosition: '-200% 0' },
+              '100%': { backgroundPosition: '200% 0' },
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* 基礎紙張質感與自訂滾動條 */
+    body {
+      background-color: #FDF8F0;
+      color: #2C241E;
+      font-family: 'Noto Sans TC', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .paper-texture {
+      background-image: radial-gradient(rgba(158, 98, 52, 0.08) 1px, transparent 0);
+      background-size: 24px 24px;
+    }
+
+    /* 首字下沉與文學排版 */
+    .literary-text {
+      font-family: 'Noto Serif TC', serif;
+      line-height: 2.15;
+      letter-spacing: 0.04em;
+    }
+
+    /* 互動關鍵字高亮 */
+    .highlight-phrase {
+      background: linear-gradient(120deg, rgba(224, 142, 69, 0.25) 0%, rgba(224, 142, 69, 0.45) 100%);
+      border-bottom: 2px solid #D97724;
+      padding: 0 4px;
+      border-radius: 4px;
+      transition: all 0.3s ease;
+    }
+
+    /* 卷軸進場動畫 */
+    .reveal-section {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1), transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .reveal-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* 龍眼果實點擊特效 */
+    .longan-cluster {
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: top center;
+    }
+    .longan-cluster:hover {
+      transform: scale(1.1) rotate(4deg);
+    }
+    .longan-cluster:active {
+      transform: scale(0.92);
+    }
+
+    /* 3D 翻轉明信片 */
+    .perspective-1000 {
+      perspective: 1000px;
+    }
+    .transform-style-3d {
+      transform-style: preserve-3d;
+      transition: transform 0.8s cubic-bezier(0.4, 0.2, 0.2, 1);
+    }
+    .backface-hidden {
+      backface-visibility: hidden;
+    }
+    .rotate-y-180 {
+      transform: rotateY(180deg);
+    }
+
+    /* 竹竿游標提示 */
+    #longan-tree-stage {
+      cursor: crosshair;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body class="paper-texture selection:bg-amber-sun/30 selection:text-ink-dark">
+
+  <!-- 背景光影粒子畫布 (陽光微塵與螢火蟲) -->
+  <canvas id="ambient-canvas" class="fixed inset-0 pointer-events-none z-0 opacity-75"></canvas>
+
+  <!-- 頂部浮動章節導覽列 -->
+  <header class="fixed top-0 left-0 right-0 z-40 transition-all duration-300 px-4 py-3">
+    <nav class="max-w-4xl mx-auto bg-parchment/85 backdrop-blur-md border border-amber-sun/25 shadow-md rounded-full px-4 py-2 flex items-center justify-between">
+      <a href="#hero" class="flex items-center gap-2 font-serif font-bold text-ink-dark text-sm sm:text-base hover:text-terracotta transition">
+        <span class="inline-block w-3 h-3 rounded-full bg-amber-sun shadow-sm"></span>
+        <span>老龍眼樹下的盛夏</span>
+      </a>
+
+      <!-- 章節圓點導覽 -->
+      <div class="flex items-center gap-1.5 sm:gap-3 text-xs sm:text-sm font-medium">
+        <a href="#chapter-1" data-nav="chapter-1" class="nav-pill px-2.5 py-1 rounded-full text-ink-muted hover:text-ink-dark hover:bg-amber-sun/15 transition">
+          <span class="hidden sm:inline">一、</span>盛夏召喚
+        </a>
+        <a href="#chapter-2" data-nav="chapter-2" class="nav-pill px-2.5 py-1 rounded-full text-ink-muted hover:text-ink-dark hover:bg-amber-sun/15 transition">
+          <span class="hidden sm:inline">二、</span>採收考驗
+        </a>
+        <a href="#chapter-3" data-nav="chapter-3" class="nav-pill px-2.5 py-1 rounded-full text-ink-muted hover:text-ink-dark hover:bg-amber-sun/15 transition">
+          <span class="hidden sm:inline">三、</span>土地傳承
+        </a>
+        <a href="#chapter-4" data-nav="chapter-4" class="nav-pill px-2.5 py-1 rounded-full text-ink-muted hover:text-ink-dark hover:bg-amber-sun/15 transition">
+          <span class="hidden sm:inline">四、</span>靜靜熟成
+        </a>
+      </div>
+
+      <!-- 音效開關按鈕 -->
+      <button id="sound-toggle" aria-label="切換環境音效" class="p-2 rounded-full bg-warm-cream hover:bg-amber-sun/20 text-longan-shell transition flex items-center gap-1 text-xs font-medium" title="開啟/關閉輕柔音效">
+        <svg id="sound-icon-off" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+        </svg>
+        <svg id="sound-icon-on" class="w-4 h-4 hidden text-moss-green" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+        </svg>
+        <span class="hidden md:inline" id="sound-label">音效關</span>
+      </button>
+    </nav>
+  </header>
+
+  <!-- 提示訊息框 (替代 alert) -->
+  <div id="toast-banner" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 transition-all duration-300 translate-y-4">
+    <div class="bg-deep-forest text-parchment px-5 py-3 rounded-2xl shadow-xl border border-amber-sun/40 flex items-center gap-2.5 text-sm font-medium">
+      <span class="text-lg">🌿</span>
+      <span id="toast-message">訊息提示</span>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       HERO 封面區：繪本開篇
+  ========================================================== -->
+  <section id="hero" class="relative z-10 min-h-[92vh] flex flex-col items-center justify-center px-4 pt-24 pb-12 text-center">
+    <div class="max-w-3xl mx-auto space-y-6">
+      <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-sun/15 border border-amber-sun/30 text-longan-shell text-xs sm:text-sm font-medium tracking-wider">
+        <span>☀️ 盛夏尋根繪本</span>
+        <span>•</span>
+        <span>互動式文學閱讀</span>
+      </div>
+
+      <h1 class="font-serif font-black text-4xl sm:text-5xl md:text-6xl text-ink-dark tracking-tight leading-tight">
+        老龍眼樹下的<span class="text-terracotta">盛夏</span>
+      </h1>
+
+      <p class="font-serif text-base sm:text-lg text-ink-muted max-w-xl mx-auto leading-relaxed">
+        從冷氣房的虛擬螢幕，走進時光遺忘的山村老宅。<br class="hidden sm:inline" />
+        在斑駁樹影與汗水之中，重新觸摸土地的溫度。
+      </p>
+
+      <!-- 封面精緻繪本徽章 SVG -->
+      <div class="relative w-52 h-52 sm:w-64 sm:h-64 mx-auto my-4 animate-float-slow">
+        <svg viewBox="0 0 260 260" class="w-full h-full drop-shadow-xl">
+          <defs>
+            <radialGradient id="sunGlow" cx="50%" cy="40%" r="50%">
+              <stop offset="0%" stop-color="#FDE68A" />
+              <stop offset="65%" stop-color="#F59E0B" stop-opacity="0.35" />
+              <stop offset="100%" stop-color="#FDF8F0" stop-opacity="0" />
+            </radialGradient>
+            <linearGradient id="trunkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#78472A" />
+              <stop offset="100%" stop-color="#4A2B18" />
+            </linearGradient>
+          </defs>
+          <!-- 暖陽底暈 -->
+          <circle cx="130" cy="125" r="115" fill="url(#sunGlow)" />
+          <!-- 遠山 -->
+          <path d="M25 165 Q75 110 130 155 T235 155 L235 195 L25 195 Z" fill="#8BA888" opacity="0.45" />
+          <!-- 紅磚三合院剪影 -->
+          <rect x="65" y="152" width="130" height="36" rx="3" fill="#C86D51" />
+          <polygon points="55,154 130,126 205,154" fill="#6B3E2E" />
+          <rect x="118" y="164" width="24" height="24" rx="2" fill="#3B2314" />
+          <!-- 老龍眼樹與垂掛果實 -->
+          <path d="M185 192 C182 160, 175 135, 192 110 M184 145 C165 130, 148 128, 138 118" stroke="url(#trunkGrad)" stroke-width="9" stroke-linecap="round" fill="none" />
+          <circle cx="185" cy="95" r="46" fill="#4A6B48" />
+          <circle cx="152" cy="108" r="34" fill="#5D825A" />
+          <circle cx="208" cy="112" r="30" fill="#3A5738" />
+          <!-- 龍眼果串 -->
+          <g fill="#B87333" stroke="#78472A" stroke-width="1.5">
+            <circle cx="145" cy="132" r="7" />
+            <circle cx="156" cy="136" r="7" />
+            <circle cx="150" cy="144" r="7" />
+            <circle cx="195" cy="134" r="6.5" />
+            <circle cx="205" cy="138" r="6.5" />
+          </g>
+          <!-- 圓形繪本邊框 -->
+          <circle cx="130" cy="130" r="118" fill="none" stroke="#E08E45" stroke-width="2" stroke-dasharray="6 6" />
+        </svg>
+      </div>
+
+      <div class="pt-2">
+        <a href="#chapter-1" class="inline-flex items-center gap-2.5 bg-terracotta hover:bg-longan-shell text-white font-medium px-7 py-3.5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5">
+          <span>翻開繪本第一章</span>
+          <svg class="w-4 h-4 animate-bounce" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       第一章：盛夏的召喚 (螢幕冷氣房 vs 山村老宅 互動切換)
+  ========================================================== -->
+  <section id="chapter-1" class="reveal-section relative z-10 py-16 sm:py-24 px-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- 章節標題 -->
+      <div class="flex items-center gap-3 mb-6">
+        <span class="px-3 py-1 rounded-full bg-ink-dark text-parchment text-xs font-bold tracking-widest">CHAPTER 01</span>
+        <h2 class="font-serif font-bold text-2xl sm:text-3xl text-ink-dark">盛夏的召喚</h2>
+      </div>
+
+      <!-- 互動插畫卡片：視角切換器 -->
+      <div id="ch1-card" class="rounded-3xl overflow-hidden shadow-xl border border-amber-sun/30 transition-colors duration-700 bg-screen-night text-white">
+        <!-- 頂部切換控制列 -->
+        <div class="p-4 sm:p-5 flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-black/20">
+          <div class="flex items-center gap-2 text-xs sm:text-sm font-medium">
+            <span id="ch1-badge-dot" class="w-2.5 h-2.5 rounded-full bg-neon-cyan animate-ping"></span>
+            <span id="ch1-scene-title">目前場景：冷氣房裡的虛擬喧囂</span>
+          </div>
+
+          <button id="toggle-world-btn" class="px-4 py-2 rounded-full bg-amber-sun hover:bg-amber-500 text-ink-dark font-bold text-xs sm:text-sm shadow-md transition-all transform active:scale-95 flex items-center gap-2">
+            <span id="toggle-world-icon">🏡</span>
+            <span id="toggle-world-text">放下鍵盤，走進山村老宅</span>
+          </button>
+        </div>
+
+        <!-- 雙場景 SVG 舞台 -->
+        <div class="relative w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden">
+          <!-- 場景 A：冷氣房與發光螢幕 -->
+          <div id="scene-digital" class="absolute inset-0 transition-all duration-700 opacity-100 scale-100">
+            <svg viewBox="0 0 800 360" class="w-full h-full object-cover" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="roomBg" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#0F172A" />
+                  <stop offset="100%" stop-color="#1E293B" />
+                </linearGradient>
+                <radialGradient id="monitorGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.45" />
+                  <stop offset="100%" stop-color="#0F172A" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+              <rect width="800" height="360" fill="url(#roomBg)" />
+              <!-- 窗外刺眼盛夏陽光滲入百葉窗 -->
+              <rect x="60" y="35" width="160" height="190" rx="6" fill="#FEF08A" opacity="0.18" />
+              <g stroke="#334155" stroke-width="4">
+                <line x1="60" y1="60" x2="220" y2="60" />
+                <line x1="60" y1="85" x2="220" y2="85" />
+                <line x1="60" y1="110" x2="220" y2="110" />
+                <line x1="60" y1="135" x2="220" y2="135" />
+                <line x1="60" y1="160" x2="220" y2="160" />
+                <line x1="60" y1="185" x2="220" y2="185" />
+              </g>
+              <!-- 冷氣機與冷風波紋 -->
+              <rect x="540" y="30" width="190" height="48" rx="10" fill="#CBD5E1" />
+              <line x1="555" y1="65" x2="715" y2="65" stroke="#64748B" stroke-width="3" />
+              <path d="M580 88 Q570 108 585 125 M630 88 Q620 108 635 125 M680 88 Q670 108 685 125" stroke="#7DD3FC" stroke-width="2" fill="none" opacity="0.5" stroke-dasharray="4 4" />
+              <!-- 電腦桌與螢幕光暈 -->
+              <ellipse cx="400" cy="210" rx="220" ry="130" fill="url(#monitorGlow)" />
+              <rect x="220" y="275" width="360" height="16" rx="4" fill="#334155" />
+              <!-- 螢幕 -->
+              <rect x="295" y="135" width="210" height="125" rx="10" fill="#0284C7" stroke="#94A3B8" stroke-width="5" />
+              <rect x="307" y="147" width="186" height="101" rx="4" fill="#0C4A6E" />
+              <!-- 螢幕內的虛擬雜訊線條 -->
+              <rect x="325" y="165" width="90" height="10" rx="3" fill="#38BDF8" opacity="0.8" />
+              <rect x="325" y="185" width="140" height="8" rx="3" fill="#7DD3FC" opacity="0.5" />
+              <rect x="325" y="202" width="110" height="8" rx="3" fill="#F472B6" opacity="0.6" />
+              <polygon points="445,215 475,232 445,232" fill="#38BDF8" opacity="0.7" />
+              <!-- 螢幕支架與鍵盤 -->
+              <rect x="388" y="260" width="24" height="15" fill="#64748B" />
+              <rect x="320" y="267" width="160" height="8" rx="3" fill="#475569" />
+              <!-- 手機來電震動提示（祖父的召喚） -->
+              <g transform="translate(525, 232)">
+                <rect x="0" y="0" width="32" height="42" rx="6" fill="#1E293B" stroke="#FBBF24" stroke-width="2" />
+                <circle cx="16" cy="18" r="6" fill="#F59E0B" />
+                <text x="16" y="34" text-anchor="middle" fill="#FDE68A" font-size="7" font-weight="bold">祖父來電</text>
+              </g>
+            </svg>
+          </div>
+
+          <!-- 場景 B：陽光山村老宅（三合院與翠綠山巒） -->
+          <div id="scene-village" class="absolute inset-0 transition-all duration-700 opacity-0 scale-105 pointer-events-none">
+            <svg viewBox="0 0 800 360" class="w-full h-full object-cover" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <linearGradient id="summerSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#FDE68A" />
+                  <stop offset="55%" stop-color="#FEF3C7" />
+                  <stop offset="100%" stop-color="#F6EEDF" />
+                </linearGradient>
+                <linearGradient id="hillGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#6B8E67" />
+                  <stop offset="100%" stop-color="#3F5E3C" />
+                </linearGradient>
+              </defs>
+              <rect width="800" height="360" fill="url(#summerSky)" />
+              <!-- 熾熱盛夏太陽 -->
+              <circle cx="670" cy="72" r="42" fill="#F59E0B" opacity="0.85" />
+              <circle cx="670" cy="72" r="62" fill="#FBBF24" opacity="0.25" />
+              <!-- 層疊山巒 -->
+              <path d="M0 215 Q160 115 340 195 T680 165 L800 185 L800 360 L0 360 Z" fill="#8FB08A" opacity="0.6" />
+              <path d="M0 245 Q220 165 440 225 T800 190 L800 360 L0 360 Z" fill="url(#hillGrad)" />
+              <!-- 紅磚山村老宅 -->
+              <g transform="translate(220, 165)">
+                <!-- 屋身 -->
+                <rect x="40" y="65" width="280" height="85" rx="4" fill="#C46243" />
+                <!-- 紅磚紋理線 -->
+                <line x1="40" y1="90" x2="320" y2="90" stroke="#9E472D" stroke-width="2" opacity="0.5" />
+                <line x1="40" y1="115" x2="320" y2="115" stroke="#9E472D" stroke-width="2" opacity="0.5" />
+                <!-- 燕尾屋脊與瓦片屋頂 -->
+                <path d="M15 68 Q180 58 345 68 L315 24 Q180 18 45 24 Z" fill="#5C3A28" />
+                <!-- 木門與窗戶 -->
+                <rect x="155" y="88" width="50" height="62" rx="2" fill="#4A2E1B" />
+                <rect x="78" y="92" width="38" height="34" rx="2" fill="#FEF3C7" stroke="#4A2E1B" stroke-width="3" />
+                <rect x="244" y="92" width="38" height="34" rx="2" fill="#FEF3C7" stroke="#4A2E1B" stroke-width="3" />
+              </g>
+              <!-- 前院泥土地與老樹綠蔭 -->
+              <path d="M0 310 Q400 295 800 315 L800 360 L0 360 Z" fill="#D4B483" />
+              <circle cx="110" cy="180" r="85" fill="#4A6B48" />
+              <circle cx="60" cy="210" r="65" fill="#3A5738" />
+              <path d="M95 315 C95 265, 105 230, 115 190" stroke="#5C3A28" stroke-width="14" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        <!-- 第一章文學內文 -->
+        <div id="ch1-text-box" class="p-6 sm:p-10 transition-colors duration-700 bg-slate-900/90 text-slate-100">
+          <p class="literary-text text-lg sm:text-xl">
+            暑假的日光總是過於熾熱，將日子曬得有些發燙而刺眼。往年的這個時候，我總習慣躲在冷氣房裡，讓指尖在鍵盤與螢幕間流連，用虛擬的喧囂填滿大把揮霍的青春。然而，今年夏天，祖父的一聲召喚，將我拉回了那座被時光遺忘的山村老宅，也為我展開了一段出乎意料的尋根之旅。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       第二章：老龍眼樹下的考驗 (竹竿採龍眼互動小遊戲)
+  ========================================================== -->
+  <section id="chapter-2" class="reveal-section relative z-10 py-16 sm:py-24 px-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- 章節標題 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full bg-amber-sun text-white text-xs font-bold tracking-widest">CHAPTER 02</span>
+          <h2 class="font-serif font-bold text-2xl sm:text-3xl text-ink-dark">老龍眼樹下的考驗</h2>
+        </div>
+        <span class="text-xs sm:text-sm text-longan-shell font-medium bg-amber-sun/15 px-3 py-1 rounded-full">
+          🎋 互動體驗：點擊樹梢龍眼，揮動竹竿採收！
+        </span>
+      </div>
+
+      <!-- 互動插畫舞台：老龍眼樹與竹竿採收 -->
+      <div class="bg-warm-cream rounded-3xl shadow-xl border border-amber-sun/35 overflow-hidden">
+        <!-- 進度狀態列 -->
+        <div class="bg-parchment px-5 py-4 border-b border-amber-sun/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <span class="text-xl">💦</span>
+            <div>
+              <div class="text-xs text-ink-muted font-medium">汗水與耐心累積度</div>
+              <div class="text-sm font-bold text-ink-dark" id="harvest-status-text">已採收 0 / 5 串龍眼（點擊樹上果實開始採收）</div>
+            </div>
+          </div>
+
+          <!-- 進度條 -->
+          <div class="w-full sm:w-56 h-3.5 bg-amber-sun/20 rounded-full overflow-hidden p-0.5">
+            <div id="harvest-progress-bar" class="h-full bg-gradient-to-r from-amber-sun to-terracotta rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- 互動龍眼樹 SVG 畫布 -->
+        <div id="longan-tree-stage" class="relative w-full aspect-[16/10] sm:aspect-[16/9] bg-gradient-to-b from-[#FEF3C7] via-[#F9E8C9] to-[#E6D2B5] select-none overflow-hidden">
+          <svg id="longan-svg" viewBox="0 0 800 450" class="w-full h-full">
+            <defs>
+              <!-- 樹葉間灑下的斑駁金光 -->
+              <linearGradient id="sunBeam" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FDE047" stop-opacity="0.45" />
+                <stop offset="100%" stop-color="#FDE047" stop-opacity="0" />
+              </linearGradient>
+              <radialGradient id="longanFruitGrad" cx="35%" cy="35%" r="65%">
+                <stop offset="0%" stop-color="#D99B52" />
+                <stop offset="70%" stop-color="#9E6234" />
+                <stop offset="100%" stop-color="#6B3E1D" />
+              </radialGradient>
+            </defs>
+
+            <!-- 光束 (Komorebi) -->
+            <polygon points="120,0 260,0 480,450 260,450" fill="url(#sunBeam)" />
+            <polygon points="420,0 560,0 740,450 540,450" fill="url(#sunBeam)" />
+
+            <!-- 後院泥土地與竹籃 -->
+            <path d="M0 390 Q400 370 800 395 L800 450 L0 450 Z" fill="#C4A47C" />
+            <!-- 竹編採收籃 -->
+            <g transform="translate(610, 345)">
+              <path d="M10 15 L90 15 L80 65 L20 65 Z" fill="#B68246" stroke="#784E21" stroke-width="2.5" />
+              <line x1="14" y1="30" x2="86" y2="30" stroke="#784E21" stroke-width="1.5" />
+              <line x1="17" y1="48" x2="83" y2="48" stroke="#784E21" stroke-width="1.5" />
+              <text x="50" y="82" text-anchor="middle" fill="#5C4F42" font-size="12" font-weight="bold">採收竹籃</text>
+              <!-- 籃中已採收的果實容器 -->
+              <g id="basket-fruits"></g>
+            </g>
+
+            <!-- 虯曲蒼勁的老龍眼樹幹與枝椏 -->
+            <g stroke="#593722" stroke-linecap="round" fill="none">
+              <path d="M150 410 C155 320, 130 250, 195 175" stroke-width="34" />
+              <path d="M195 175 C255 125, 360 110, 480 120" stroke-width="20" />
+              <path d="M185 190 C280 195, 420 190, 580 165" stroke-width="16" />
+              <path d="M165 210 C110 165, 70 140, 35 120" stroke-width="14" />
+              <path d="M350 125 C410 85, 510 75, 640 90" stroke-width="12" />
+            </g>
+
+            <!-- 濃蔭蔽日的樹冠層 -->
+            <g opacity="0.95">
+              <ellipse cx="220" cy="95" rx="180" ry="95" fill="#3B5939" />
+              <ellipse cx="450" cy="85" rx="210" ry="100" fill="#4A6B48" />
+              <ellipse cx="640" cy="115" rx="145" ry="85" fill="#365234" />
+              <ellipse cx="110" cy="135" rx="120" ry="75" fill="#567A54" />
+              <ellipse cx="340" cy="130" rx="160" ry="75" fill="#5E855B" />
+              <ellipse cx="550" cy="135" rx="140" ry="70" fill="#486946" />
+            </g>
+
+            <!-- 5 串可互動採收的黃金龍眼果串 -->
+            <g id="harvestable-clusters">
+              <!-- 果串 1 -->
+              <g class="longan-cluster" data-id="1" transform="translate(230, 185)">
+                <path d="M0 0 L0 22 M0 12 L-12 26 M0 12 L12 26" stroke="#6B4423" stroke-width="2.5" />
+                <circle cx="-12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="40" r="12" fill="url(#longanFruitGrad)" />
+                <circle cx="-6" cy="24" r="3" fill="#FFFBEB" opacity="0.4" />
+              </g>
+
+              <!-- 果串 2 -->
+              <g class="longan-cluster" data-id="2" transform="translate(355, 175)">
+                <path d="M0 0 L0 24 M0 14 L-14 28 M0 14 L14 28" stroke="#6B4423" stroke-width="2.5" />
+                <circle cx="-14" cy="32" r="11.5" fill="url(#longanFruitGrad)" />
+                <circle cx="14" cy="32" r="11.5" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="42" r="12" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="24" r="10.5" fill="url(#longanFruitGrad)" />
+              </g>
+
+              <!-- 果串 3 -->
+              <g class="longan-cluster" data-id="3" transform="translate(475, 188)">
+                <path d="M0 0 L0 22 M0 12 L-12 26 M0 12 L12 26" stroke="#6B4423" stroke-width="2.5" />
+                <circle cx="-12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="40" r="12" fill="url(#longanFruitGrad)" />
+              </g>
+
+              <!-- 果串 4 -->
+              <g class="longan-cluster" data-id="4" transform="translate(585, 172)">
+                <path d="M0 0 L0 24 M0 14 L-13 28 M0 14 L13 28" stroke="#6B4423" stroke-width="2.5" />
+                <circle cx="-13" cy="32" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="13" cy="32" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="42" r="12" fill="url(#longanFruitGrad)" />
+              </g>
+
+              <!-- 果串 5 -->
+              <g class="longan-cluster" data-id="5" transform="translate(295, 215)">
+                <path d="M0 0 L0 22 M0 12 L-12 26 M0 12 L12 26" stroke="#6B4423" stroke-width="2.5" />
+                <circle cx="-12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="12" cy="30" r="11" fill="url(#longanFruitGrad)" />
+                <circle cx="0" cy="40" r="12" fill="url(#longanFruitGrad)" />
+              </g>
+            </g>
+
+            <!-- 揮動的長竹竿 (預設停在右側，點擊果串時動態伸向果串) -->
+            <g id="bamboo-pole" class="transition-all duration-300 ease-out" transform="translate(460, 440) rotate(-25)">
+              <rect x="-4" y="-260" width="8" height="270" rx="3" fill="#84A955" stroke="#557232" stroke-width="1.5" />
+              <!-- 竹節 -->
+              <line x1="-5" y1="-60" x2="5" y2="-60" stroke="#465E28" stroke-width="2.5" />
+              <line x1="-5" y1="-130" x2="5" y2="-130" stroke="#465E28" stroke-width="2.5" />
+              <line x1="-5" y1="-200" x2="5" y2="-200" stroke="#465E28" stroke-width="2.5" />
+              <!-- 頂端夾果叉口 -->
+              <path d="M-4 -260 L-10 -278 M4 -260 L10 -278" stroke="#557232" stroke-width="3" stroke-linecap="round" />
+            </g>
+
+            <!-- 飄浮的汗滴與蚊蟲提示文字容器 -->
+            <g id="harvest-floating-feedback"></g>
+          </svg>
+
+          <!-- 採收完成後彈出的「剝開的龍眼果肉」特寫卡片 -->
+          <div id="peeled-longan-modal" class="hidden absolute inset-0 bg-ink-dark/65 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
+            <div class="bg-parchment max-w-md w-full rounded-3xl p-6 text-center shadow-2xl border-2 border-amber-sun space-y-4 transform transition-all">
+              <!-- 透亮如玉的龍眼果肉 SVG -->
+              <div class="w-24 h-24 mx-auto relative">
+                <svg viewBox="0 0 120 120" class="w-full h-full drop-shadow-md">
+                  <defs>
+                    <radialGradient id="jadePulp" cx="40%" cy="35%" r="60%">
+                      <stop offset="0%" stop-color="#FFFFFF" />
+                      <stop offset="55%" stop-color="#E8F3E8" />
+                      <stop offset="100%" stop-color="#C5DEC6" />
+                    </radialGradient>
+                  </defs>
+                  <!-- 剝開的褐色外殼 -->
+                  <path d="M22 65 C15 95, 45 110, 65 102 C50 92, 35 78, 22 65 Z" fill="#8C5327" />
+                  <path d="M98 65 C105 95, 75 110, 55 102 C70 92, 85 78, 98 65 Z" fill="#73411B" />
+                  <!-- 透亮如玉果肉 -->
+                  <circle cx="60" cy="56" r="32" fill="url(#jadePulp)" stroke="#B7D4B8" stroke-width="1.5" />
+                  <!-- 隱約可見的黑亮果核 -->
+                  <circle cx="60" cy="58" r="13" fill="#2C1D11" opacity="0.72" />
+                  <!-- 水潤高光 -->
+                  <ellipse cx="48" cy="43" rx="8" ry="4" transform="rotate(-30 48 43)" fill="#FFFFFF" opacity="0.9" />
+                </svg>
+              </div>
+              <div class="text-xs font-bold tracking-widest text-moss-green uppercase">清甜沁心脾</div>
+              <h3 class="font-serif font-bold text-xl text-ink-dark">透亮如玉的龍眼果肉</h3>
+              <p class="font-serif text-sm sm:text-base text-ink-muted leading-relaxed">
+                「這樹是你太祖父種下的，養了幾十年。做人就像採龍眼，前面沒流過汗、沒耐著性子扎根，後面哪嚐得到這股甘甜？」
+              </p>
+              <div class="pt-1 flex justify-center gap-3">
+                <button id="close-longan-modal" class="px-5 py-2 rounded-full bg-moss-green hover:bg-deep-forest text-white text-sm font-medium transition">
+                  細細品味這句話
+                </button>
+                <button id="reset-harvest-btn" class="px-4 py-2 rounded-full bg-warm-cream hover:bg-amber-sun/20 text-longan-shell text-sm font-medium transition">
+                  再採一次
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 第二章文學內文 + 祖父箴言金句卡 -->
+        <div class="p-6 sm:p-10 bg-parchment space-y-6">
+          <p class="literary-text text-lg sm:text-xl text-ink-dark">
+            老宅的後院種著一棵老龍眼樹，枝幹虯曲，濃蔭蔽日。那天午後，祖父拿著長長的竹竿，帶著我採收龍眼。陽光透過葉縫灑下斑駁的金光，蒸騰著土香與成熟果實的甜膩氣息。我笨拙地揮舞竹竿，不一會便汗流浃背、腰酸背痛，甚至被蚊蟲咬得滿身紅腫。正當我想放棄並抱怨這項枯燥的體力活時，祖父遞過一顆剛剝開的龍眼。那透亮如玉的果肉入口，一股清甜頓時在舌尖炸開，涼意直沁心脾。
+          </p>
+
+          <!-- 祖父箴言書法卡片 -->
+          <blockquote id="grandpa-quote-card" class="relative p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-[#F7EBD5] to-[#EFE0C4] border-l-4 border-terracotta shadow-inner transition-all duration-500">
+            <span class="absolute top-3 right-5 font-serif text-5xl text-terracotta/20 select-none">”</span>
+            <p class="literary-text text-lg sm:text-xl font-bold text-ink-dark">
+              祖父笑著說：「這樹是你太祖父種下的，養了幾十年。做人就像採龍眼，前面沒流過汗、沒耐著性子扎根，後面哪嚐得到這股甘甜？」
+            </p>
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       第三章：土地的溫度與傳承 (修剪、翻土、施肥 互動耕耘)
+  ========================================================== -->
+  <section id="chapter-3" class="reveal-section relative z-10 py-16 sm:py-24 px-4">
+    <div class="max-w-4xl mx-auto">
+      <!-- 章節標題 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full bg-moss-green text-white text-xs font-bold tracking-widest">CHAPTER 03</span>
+          <h2 class="font-serif font-bold text-2xl sm:text-3xl text-ink-dark">土地的溫度與傳承</h2>
+        </div>
+        <span class="text-xs sm:text-sm text-moss-green font-medium bg-moss-green/10 px-3 py-1 rounded-full">
+          🌱 互動體驗：點擊下方農事按鈕，感受汗水扎根
+        </span>
+      </div>
+
+      <div class="bg-parchment rounded-3xl shadow-xl border border-moss-green/30 overflow-hidden">
+        <!-- 土地剖面與三代傳承插畫 -->
+        <div class="relative w-full aspect-[16/10] sm:aspect-[21/10] bg-gradient-to-b from-[#F5EBD6] to-[#E6D5B8] overflow-hidden">
+          <svg viewBox="0 0 800 380" class="w-full h-full">
+            <defs>
+              <linearGradient id="soilLayer" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#6E472B" />
+                <stop offset="100%" stop-color="#3D2514" />
+              </linearGradient>
+              <filter id="rootGlow">
+                <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- 地上部分：祖父堅毅的雙手與新綠枝葉 -->
+            <!-- 樹幹基部 -->
+            <path d="M375 210 C380 155, 385 110, 395 65 L415 65 C422 110, 425 155, 430 210 Z" fill="#5C3A28" />
+            <!-- 枝條與嫩葉（隨互動逐漸茂盛） -->
+            <path d="M395 115 C345 95, 300 90, 260 105" stroke="#5C3A28" stroke-width="8" stroke-linecap="round" fill="none" />
+            <path d="M415 100 C465 80, 515 78, 555 95" stroke="#5C3A28" stroke-width="8" stroke-linecap="round" fill="none" />
+
+            <!-- 動態新葉群 -->
+            <g id="foliage-growth" class="transition-all duration-700">
+              <ellipse cx="275" cy="95" rx="34" ry="18" fill="#5D825A" />
+              <ellipse cx="535" cy="88" rx="36" ry="18" fill="#4A6B48" />
+              <!-- 額外茂盛葉片（施肥/修剪後顯示） -->
+              <g id="extra-leaves" class="opacity-0 transition-opacity duration-700">
+                <ellipse cx="245" cy="112" rx="28" ry="15" fill="#749E70" />
+                <ellipse cx="320" cy="78" rx="30" ry="16" fill="#4A6B48" />
+                <ellipse cx="485" cy="72" rx="32" ry="16" fill="#6B9467" />
+                <ellipse cx="565" cy="108" rx="28" ry="15" fill="#3D5C3B" />
+              </g>
+            </g>
+
+            <!-- 祖父滿是褶皺卻堅毅的雙手捧著龍眼（繪本風格示意） -->
+            <g transform="translate(115, 110)">
+              <path d="M20 75 C10 55, 25 35, 50 42 C65 46, 75 60, 72 78 C68 92, 32 92, 20 75 Z" fill="#D49B6A" stroke="#8C5832" stroke-width="2" />
+              <path d="M98 75 C108 55, 93 35, 68 42 C53 46, 43 60, 46 78 C50 92, 86 92, 98 75 Z" fill="#C98E5D" stroke="#8C5832" stroke-width="2" />
+              <!-- 手掌褶皺紋理 -->
+              <path d="M35 62 Q48 66 55 60 M65 60 Q72 66 85 62" stroke="#8C5832" stroke-width="1.5" fill="none" />
+              <!-- 掌心裡的龍眼 -->
+              <circle cx="52" cy="54" r="9" fill="#9E6234" />
+              <circle cx="67" cy="54" r="9" fill="#B57441" />
+              <circle cx="60" cy="44" r="9" fill="#8C5327" />
+              <text x="60" y="108" text-anchor="middle" fill="#5C4F42" font-size="11" font-weight="bold">歲月與雙手的溫度</text>
+            </g>
+
+            <!-- 地下泥土剖面層 -->
+            <path d="M0 205 Q400 198 800 205 L800 380 L0 380 Z" fill="url(#soilLayer)" />
+            <!-- 翻土顆粒動畫容器 -->
+            <g id="soil-clods">
+              <circle cx="310" cy="222" r="5" fill="#8B5A36" />
+              <circle cx="490" cy="224" r="6" fill="#52321B" />
+              <circle cx="350" cy="235" r="4" fill="#8B5A36" />
+              <circle cx="460" cy="238" r="5" fill="#52321B" />
+            </g>
+
+            <!-- 地下發光樹根系統（隨汗水滴落而向下延伸） -->
+            <g id="tree-roots" filter="url(#rootGlow)" stroke="#E6B87D" stroke-linecap="round" fill="none">
+              <!-- 主根 -->
+              <path d="M402 205 C400 245, 395 280, 405 320" stroke-width="6" />
+              <path d="M392 205 C365 240, 320 265, 275 295" stroke-width="4.5" />
+              <path d="M412 205 C445 240, 490 265, 535 295" stroke-width="4.5" />
+              <!-- 深度延伸鬚根（互動後點亮） -->
+              <g id="deep-roots" class="opacity-25 transition-all duration-1000" stroke="#FDE047" stroke-width="2.5">
+                <path d="M275 295 C240 315, 200 330, 165 345" />
+                <path d="M335 262 C320 300, 305 330, 290 358" />
+                <path d="M405 320 C402 340, 412 355, 420 368" />
+                <path d="M475 262 C495 300, 510 330, 525 358" />
+                <path d="M535 295 C570 315, 610 330, 645 345" />
+              </g>
+            </g>
+
+            <!-- 三代傳承年輪標記 -->
+            <g transform="translate(655, 250)">
+              <rect x="-65" y="-18" width="130" height="92" rx="12" fill="#2C1D11" opacity="0.75" stroke="#E08E45" stroke-width="1" />
+              <text x="0" y="4" text-anchor="middle" fill="#FDE68A" font-size="12" font-weight="bold">家族生命的延續</text>
+              <text x="0" y="26" text-anchor="middle" fill="#E5D5C0" font-size="11">太祖父 ── 親手栽種</text>
+              <text x="0" y="44" text-anchor="middle" fill="#E5D5C0" font-size="11">祖父 ── 悉心照料</text>
+              <text x="0" y="62" text-anchor="middle" fill="#86EFAC" font-size="11" font-weight="bold">我 ── 彎腰扎根</text>
+            </g>
+
+            <!-- 汗水滴落特效容器 -->
+            <g id="sweat-drop-container"></g>
+          </svg>
+        </div>
+
+        <!-- 農事互動操作按鈕列 -->
+        <div class="bg-warm-cream px-5 py-4 border-y border-moss-green/20 flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+          <button data-farm="prune" class="farm-action-btn px-4 py-2.5 rounded-full bg-parchment hover:bg-moss-green hover:text-white text-ink-dark border border-moss-green/40 shadow-sm text-sm font-medium transition flex items-center gap-2">
+            <span>✂️</span>
+            <span>修剪枝條</span>
+          </button>
+          <button data-farm="till" class="farm-action-btn px-4 py-2.5 rounded-full bg-parchment hover:bg-longan-shell hover:text-white text-ink-dark border border-longan-shell/40 shadow-sm text-sm font-medium transition flex items-center gap-2">
+            <span>⛏️</span>
+            <span>翻土鬆根</span>
+          </button>
+          <button data-farm="fertilize" class="farm-action-btn px-4 py-2.5 rounded-full bg-parchment hover:bg-amber-sun hover:text-white text-ink-dark border border-amber-sun/40 shadow-sm text-sm font-medium transition flex items-center gap-2">
+            <span>💧</span>
+            <span>施肥滴汗</span>
+          </button>
+        </div>
+
+        <!-- 第三章文學內文 -->
+        <div class="p-6 sm:p-10">
+          <p class="literary-text text-lg sm:text-xl text-ink-dark">
+            這句話如同一道微風，吹散了我心中的燥熱與浮躁。看著祖父滿是褶皺卻無比堅毅的雙手，我突然明白，自己過去沉迷於網路遊戲獲得的瞬間快感，是多麼的虛浮與短暫。那一顆小小的龍眼，包裹的弗止是果肉，更是歲月的沉澱與家族生命的延續。隨後的日子裡，我跟著祖父修剪枝條、翻土施肥。每一次彎腰、每一滴落入泥土的汗水，都讓我真實地感受到了自己與這片土地的連結。
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- =========================================================
+       第四章：平淡日常中的熟成 (日落老宅全景 + 夏日感悟書籤)
+  ========================================================== -->
+  <section id="chapter-4" class="reveal-section relative z-10 py-16 sm:py-24 px-4 pb-28">
+    <div class="max-w-4xl mx-auto">
+      <!-- 章節標題 -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full bg-terracotta text-white text-xs font-bold tracking-widest">CHAPTER 04</span>
+          <h2 class="font-serif font-bold text-2xl sm:text-3xl text-ink-dark">平淡日常中的熟成</h2>
+        </div>
+        <button id="toggle-highlight-btn" class="text-xs sm:text-sm text-terracotta hover:bg-terracotta hover:text-white font-medium border border-terracotta/40 px-3.5 py-1.5 rounded-full transition">
+          ✨ 標記全文核心金句
+        </button>
+      </div>
+
+      <div class="bg-parchment rounded-3xl shadow-xl border border-amber-sun/35 overflow-hidden">
+        <!-- 黃昏日落老宅全景插畫 -->
+        <div class="relative w-full aspect-[16/9] sm:aspect-[21/9] overflow-hidden">
+          <svg viewBox="0 0 800 360" class="w-full h-full object-cover" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="sunsetSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#4A354F" />
+                <stop offset="40%" stop-color="#C86D51" />
+                <stop offset="80%" stop-color="#F4A259" />
+                <stop offset="100%" stop-color="#FDE68A" />
+              </linearGradient>
+            </defs>
+            <rect width="800" height="360" fill="url(#sunsetSky)" />
+            <!-- 落日餘暉 -->
+            <circle cx="400" cy="215" r="58" fill="#FEF08A" opacity="0.9" />
+            <circle cx="400" cy="215" r="95" fill="#FBBF24" opacity="0.28" />
+
+            <!-- 遠山剪影 -->
+            <path d="M0 225 Q180 155 370 210 T800 185 L800 360 L0 360 Z" fill="#5C3D3E" opacity="0.65" />
+            <path d="M0 255 Q260 205 520 245 T800 225 L800 360 L0 360 Z" fill="#3B2927" />
+
+            <!-- 老宅剪影與溫暖燈火 -->
+            <g transform="translate(260, 205)">
+              <rect x="30" y="35" width="220" height="60" rx="3" fill="#4A2518" />
+              <polygon points="10,37 140,8 270,37" fill="#2B150E" />
+              <!-- 溫暖窗光 -->
+              <rect x="75" y="52" width="28" height="24" rx="2" fill="#FDE047" />
+              <rect x="175" y="52" width="28" height="24" rx="2" fill="#FDE047" />
+            </g>
+
+            <!-- 繁茂老龍眼樹剪影與金黃果實微光 -->
+            <circle cx="150" cy="195" r="95" fill="#273626" />
+            <circle cx="215" cy="215" r="65" fill="#1F2B1E" />
+            <circle cx="135" cy="200" r="4" fill="#FBBF24" class="animate-pulse" />
+            <circle cx="175" cy="185" r="4.5" fill="#FBBF24" class="animate-pulse" />
+            <circle cx="205" cy="210" r="4" fill="#FBBF24" class="animate-pulse" />
+
+            <!-- 前景大地 -->
+            <path d="M0 295 Q400 280 800 300 L800 360 L0 360 Z" fill="#241914" />
+          </svg>
+        </div>
+
+        <!-- 第四章文學內文 -->
+        <div class="p-6 sm:p-10 space-y-8">
+          <p class="literary-text text-lg sm:text-xl text-ink-dark">
+            這個暑假，我沒有去遠方旅行，也沒有驚天動地的冒險，但這趟老宅之行卻成為我生命中最難忘的記憶。它讓我擺脫了數位螢幕的束縛，重拾對真實生活的感知力。<span id="ending-highlight" class="transition-all duration-500">原來，最深刻的成長往往隱匿於最平淡的日常之中；唯有腳踏實地地耕耘，甘甜的果實才會在生命的枝頭靜靜熟成。</span>
+          </p>
+
+          <!-- 互動紀念明信片（可翻轉收藏書籤） -->
+          <div class="pt-4 border-t border-amber-sun/25">
+            <div class="text-center mb-4">
+              <span class="text-xs font-bold tracking-widest text-longan-shell uppercase">SUMMER KEEPSAKE</span>
+              <h3 class="font-serif font-bold text-lg text-ink-dark mt-1">點擊翻轉你的「盛夏感悟書籤」</h3>
+            </div>
+
+            <div id="keepsake-card-wrapper" class="perspective-1000 max-w-lg mx-auto cursor-pointer select-none">
+              <div id="keepsake-card-inner" class="relative w-full h-56 transform-style-3d">
+                <!-- 正面：繪本明信片 -->
+                <div class="absolute inset-0 backface-hidden rounded-2xl bg-gradient-to-br from-[#F9EEDB] to-[#EED9B7] border-2 border-amber-sun/60 shadow-lg p-6 flex flex-col justify-between">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-terracotta tracking-widest">山村老宅 • 盛夏紀念</span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-amber-sun/20 text-longan-shell text-xs">點擊翻面 ↻</span>
+                  </div>
+                  <div class="text-center space-y-2">
+                    <div class="text-3xl">🌳🍯☀️</div>
+                    <p class="font-serif font-bold text-lg sm:text-xl text-ink-dark">
+                      「前面沒流過汗、沒耐著性子扎根，<br />後面哪嚐得到這股甘甜？」
+                    </p>
+                  </div>
+                  <div class="flex justify-between items-center text-xs text-ink-muted">
+                    <span>太祖父的龍眼樹</span>
+                    <span>真實生活的感知力</span>
+                  </div>
+                </div>
+
+                <!-- 背面：閱讀感悟結語 -->
+                <div class="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl bg-deep-forest text-parchment border-2 border-amber-sun shadow-lg p-6 flex flex-col justify-between">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-amber-sun tracking-widest">給自己的盛夏備忘錄</span>
+                    <span class="text-xs text-parchment/70">點擊翻回正面 ↺</span>
+                  </div>
+                  <p class="font-serif text-sm sm:text-base leading-relaxed text-center text-parchment/95">
+                    原來，最深刻的成長往往隱匿於最平淡的日常之中；<br />
+                    唯有腳踏實地地耕耘，甘甜的果實才會在生命的枝頭靜靜熟成。
+                  </p>
+                  <div class="flex justify-center">
+                    <button id="copy-quote-btn" class="px-4 py-1.5 rounded-full bg-amber-sun hover:bg-amber-500 text-ink-dark font-bold text-xs shadow transition">
+                      📋 複製結語金句分享
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 頁尾 -->
+  <footer class="relative z-10 text-center py-8 px-4 text-xs text-ink-muted border-t border-amber-sun/20 bg-warm-cream/60">
+    <p class="font-serif">《老龍眼樹下的盛夏》互動式圖文繪本 • 願每一份汗水都能在歲月中靜靜熟成</p>
+  </footer>
+
+  <!-- =========================================================
+       互動邏輯與視覺特效腳本
+  ========================================================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      /* -------------------------------------------------------
+         1. 通用提示框 (Toast) 與輕柔環境音效 (Tone.js)
+      ------------------------------------------------------- */
+      const toastBanner = document.getElementById('toast-banner');
+      const toastMessage = document.getElementById('toast-message');
+      let toastTimer = null;
+
+      function showToast(msg) {
+        toastMessage.textContent = msg;
+        toastBanner.classList.remove('opacity-0', 'translate-y-4');
+        toastBanner.classList.add('opacity-100', 'translate-y-0');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastBanner.classList.add('opacity-0', 'translate-y-4');
+          toastBanner.classList.remove('opacity-100', 'translate-y-0');
+        }, 2800);
+      }
+
+      // 輕柔木琴/風鈴音效合成器
+      let soundEnabled = false;
+      let synth = null;
+      const soundToggleBtn = document.getElementById('sound-toggle');
+      const soundIconOff = document.getElementById('sound-icon-off');
+      const soundIconOn = document.getElementById('sound-icon-on');
+      const soundLabel = document.getElementById('sound-label');
+
+      async function playChime(note = 'C5', duration = '8n') {
+        if (!soundEnabled) return;
+        try {
+          if (Tone.context.state !== 'running') {
+            await Tone.start();
+          }
+          if (!synth) {
+            synth = new Tone.PolySynth(Tone.Synth, {
+              oscillator: { type: 'sine' },
+              envelope: { attack: 0.02, decay: 0.3, sustain: 0.1, release: 1.2 }
+            }).toDestination();
+            synth.volume.value = -12;
+          }
+          synth.triggerAttackRelease(note, duration);
+        } catch (err) {
+          console.warn('Audio playback skipped:', err);
+        }
+      }
+
+      soundToggleBtn.addEventListener('click', async () => {
+        soundEnabled = !soundEnabled;
+        if (soundEnabled) {
+          await Tone.start();
+          soundIconOff.classList.add('hidden');
+          soundIconOn.classList.remove('hidden');
+          soundLabel.textContent = '音效開';
+          playChime('E5');
+          showToast('已開啟輕柔繪本互動音效');
+        } else {
+          soundIconOff.classList.remove('hidden');
+          soundIconOn.classList.add('hidden');
+          soundLabel.textContent = '音效關';
+          showToast('已關閉互動音效');
+        }
+      });
+
+      /* -------------------------------------------------------
+         2. 背景陽光微塵粒子畫布 (Responsive Canvas)
+      ------------------------------------------------------- */
+      const canvas = document.getElementById('ambient-canvas');
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+
+      function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      }
+
+      function initParticles() {
+        particles = [];
+        const count = Math.min(45, Math.floor(window.innerWidth / 28));
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            r: Math.random() * 2.8 + 1,
+            vx: (Math.random() - 0.5) * 0.35,
+            vy: -Math.random() * 0.35 - 0.1,
+            alpha: Math.random() * 0.55 + 0.2
+          });
+        }
+      }
+
+      function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach(p => {
+          p.x += p.vx;
+          p.y += p.vy;
+          if (p.y < -10) p.y = canvas.height + 10;
+          if (p.x < -10) p.x = canvas.width + 10;
+          if (p.x > canvas.width + 10) p.x = -10;
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(224, 142, 69, ${p.alpha})`;
+          ctx.fill();
+        });
+        requestAnimationFrame(animateParticles);
+      }
+
+      window.addEventListener('resize', () => {
+        resizeCanvas();
+        initParticles();
+      });
+      resizeCanvas();
+      initParticles();
+      animateParticles();
+
+      /* -------------------------------------------------------
+         3. 滾動進場動畫與導覽列高亮
+      ------------------------------------------------------- */
+      const sections = document.querySelectorAll('.reveal-section');
+      const navPills = document.querySelectorAll('.nav-pill');
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible');
+            const id = entry.target.getAttribute('id');
+            navPills.forEach(pill => {
+              if (pill.dataset.nav === id) {
+                pill.classList.add('bg-amber-sun', 'text-white');
+                pill.classList.remove('text-ink-muted');
+              } else {
+                pill.classList.remove('bg-amber-sun', 'text-white');
+                pill.classList.add('text-ink-muted');
+              }
+            });
+          }
+        });
+      }, { threshold: 0.22 });
+
+      sections.forEach(sec => observer.observe(sec));
+
+      /* -------------------------------------------------------
+         4. 第一章互動：冷氣房螢幕 vs 山村老宅 視角切換
+      ------------------------------------------------------- */
+      let isVillageMode = false;
+      const toggleWorldBtn = document.getElementById('toggle-world-btn');
+      const toggleWorldIcon = document.getElementById('toggle-world-icon');
+      const toggleWorldText = document.getElementById('toggle-world-text');
+      const ch1Card = document.getElementById('ch1-card');
+      const ch1SceneTitle = document.getElementById('ch1-scene-title');
+      const ch1BadgeDot = document.getElementById('ch1-badge-dot');
+      const ch1TextBox = document.getElementById('ch1-text-box');
+      const sceneDigital = document.getElementById('scene-digital');
+      const sceneVillage = document.getElementById('scene-village');
+
+      toggleWorldBtn.addEventListener('click', () => {
+        isVillageMode = !isVillageMode;
+        if (isVillageMode) {
+          sceneDigital.classList.replace('opacity-100', 'opacity-0');
+          sceneDigital.classList.add('pointer-events-none');
+          sceneVillage.classList.replace('opacity-0', 'opacity-100');
+          sceneVillage.classList.remove('pointer-events-none', 'scale-105');
+
+          ch1Card.classList.replace('bg-screen-night', 'bg-parchment');
+          ch1Card.classList.replace('text-white', 'text-ink-dark');
+          ch1TextBox.classList.replace('bg-slate-900/90', 'bg-parchment');
+          ch1TextBox.classList.replace('text-slate-100', 'text-ink-dark');
+
+          ch1SceneTitle.textContent = '目前場景：陽光灑落的山村老宅';
+          ch1BadgeDot.classList.replace('bg-neon-cyan', 'bg-moss-green');
+          toggleWorldIcon.textContent = '💻';
+          toggleWorldText.textContent = '回到冷氣房螢幕前';
+          playChime('G5');
+          showToast('踏入山村老宅，展開一場出乎意料的尋根之旅');
+        } else {
+          sceneVillage.classList.replace('opacity-100', 'opacity-0');
+          sceneVillage.classList.add('pointer-events-none', 'scale-105');
+          sceneDigital.classList.replace('opacity-0', 'opacity-100');
+          sceneDigital.classList.remove('pointer-events-none');
+
+          ch1Card.classList.replace('bg-parchment', 'bg-screen-night');
+          ch1Card.classList.replace('text-ink-dark', 'text-white');
+          ch1TextBox.classList.replace('bg-parchment', 'bg-slate-900/90');
+          ch1TextBox.classList.replace('text-ink-dark', 'text-slate-100');
+
+          ch1SceneTitle.textContent = '目前場景：冷氣房裡的虛擬喧囂';
+          ch1BadgeDot.classList.replace('bg-moss-green', 'bg-neon-cyan');
+          toggleWorldIcon.textContent = '🏡';
+          toggleWorldText.textContent = '放下鍵盤，走進山村老宅';
+          playChime('C5');
+        }
+      });
+
+      /* -------------------------------------------------------
+         5. 第二章互動：竹竿採龍眼小遊戲
+      ------------------------------------------------------- */
+      const clusters = document.querySelectorAll('.longan-cluster');
+      const bambooPole = document.getElementById('bamboo-pole');
+      const progressBar = document.getElementById('harvest-progress-bar');
+      const statusText = document.getElementById('harvest-status-text');
+      const basketFruits = document.getElementById('basket-fruits');
+      const floatingFeedback = document.getElementById('harvest-floating-feedback');
+      const peeledModal = document.getElementById('peeled-longan-modal');
+      const closeModalBtn = document.getElementById('close-longan-modal');
+      const resetHarvestBtn = document.getElementById('reset-harvest-btn');
+      const grandpaQuoteCard = document.getElementById('grandpa-quote-card');
+
+      let harvestedCount = 0;
+      const totalClusters = clusters.length;
+      const sweatMessages = [
+        '💦 揮舞竹竿，汗流浹背...',
+        '🦟 哎呀！被蚊蟲咬了一口...',
+        '💪 腰酸背痛，但再堅持一下！',
+        '☀️ 陽光斑駁，果香越來越濃了...',
+        '🎉 採滿一籃！祖父遞來一顆剝開的龍眼'
+      ];
+      const notes = ['C5', 'D5', 'E5', 'G5', 'A5'];
+
+      function spawnFloatingText(x, y, text) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', x);
+        txt.setAttribute('y', y);
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', '#78350F');
+        txt.setAttribute('font-size', '14');
+        txt.setAttribute('font-weight', 'bold');
+        txt.textContent = text;
+        floatingFeedback.appendChild(txt);
+
+        let step = 0;
+        const anim = setInterval(() => {
+          step++;
+          txt.setAttribute('y', y - step * 1.5);
+          txt.setAttribute('opacity', 1 - step / 30);
+          if (step >= 30) {
+            clearInterval(anim);
+            txt.remove();
+          }
+        }, 25);
+      }
+
+      clusters.forEach((cluster) => {
+        cluster.addEventListener('click', (e) => {
+          if (cluster.dataset.harvested === 'true') return;
+          cluster.dataset.harvested = 'true';
+
+          // 解析果串座標以移動竹竿
+          const transformAttr = cluster.getAttribute('transform');
+          const match = /translate\(([^,]+),\s*([^)]+)\)/.exec(transformAttr);
+          const cx = match ? parseFloat(match[1]) : 350;
+          const cy = match ? parseFloat(match[2]) : 180;
+
+          // 竹竿揮向果串
+          const angle = (cx - 460) * 0.14;
+          bambooPole.setAttribute('transform', `translate(${cx + 35}, ${cy + 275}) rotate(${angle})`);
+
+          playChime(notes[harvestedCount % notes.length]);
+          spawnFloatingText(cx, cy - 10, sweatMessages[harvestedCount] || '💦 採收成功！');
+
+          // 果串掉落消失並加入竹籃
+          cluster.style.transition = 'transform 0.5s ease-in, opacity 0.5s ease-in';
+          cluster.style.transform = `translate(${cx}px, ${cy + 140}px) scale(0.4)`;
+          cluster.style.opacity = '0';
+          cluster.style.pointerEvents = 'none';
+
+          const basketDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          basketDot.setAttribute('cx', 28 + harvestedCount * 11);
+          basketDot.setAttribute('cy', 13 - (harvestedCount % 2) * 4);
+          basketDot.setAttribute('r', '7');
+          basketDot.setAttribute('fill', '#9E6234');
+          basketFruits.appendChild(basketDot);
+
+          harvestedCount++;
+          const percent = (harvestedCount / totalClusters) * 100;
+          progressBar.style.width = `${percent}%`;
+          statusText.textContent = `已採收 ${harvestedCount} / ${totalClusters} 串龍眼`;
+
+          if (harvestedCount === totalClusters) {
+            setTimeout(() => {
+              peeledModal.classList.remove('hidden');
+              grandpaQuoteCard.classList.add('ring-4', 'ring-amber-sun/60');
+              playChime('C6', '4n');
+            }, 600);
+          }
+        });
+      });
+
+      closeModalBtn.addEventListener('click', () => {
+        peeledModal.classList.add('hidden');
+        showToast('已解鎖祖父的人生哲理金句');
+      });
+
+      resetHarvestBtn.addEventListener('click', () => {
+        harvestedCount = 0;
+        progressBar.style.width = '0%';
+        statusText.textContent = '已採收 0 / 5 串龍眼（點擊樹上果實開始採收）';
+        basketFruits.innerHTML = '';
+        peeledModal.classList.add('hidden');
+        clusters.forEach((cluster) => {
+          cluster.dataset.harvested = 'false';
+          cluster.style.transition = 'none';
+          cluster.style.transform = '';
+          cluster.style.opacity = '1';
+          cluster.style.pointerEvents = 'auto';
+        });
+      });
+
+      /* -------------------------------------------------------
+         6. 第三章互動：農事耕耘與汗水扎根
+      ------------------------------------------------------- */
+      const farmBtns = document.querySelectorAll('.farm-action-btn');
+      const extraLeaves = document.getElementById('extra-leaves');
+      const deepRoots = document.getElementById('deep-roots');
+      const sweatContainer = document.getElementById('sweat-drop-container');
+      const soilClods = document.getElementById('soil-clods');
+
+      farmBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const action = btn.dataset.farm;
+          playChime('E5');
+
+          // 產生一滴落入泥土的發光汗水
+          const drop = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+          const startX = 360 + Math.random() * 90;
+          drop.setAttribute('cx', startX);
+          drop.setAttribute('cy', '145');
+          drop.setAttribute('r', '5');
+          drop.setAttribute('fill', '#38BDF8');
+          sweatContainer.appendChild(drop);
+
+          let dy = 145;
+          const fallTimer = setInterval(() => {
+            dy += 5;
+            drop.setAttribute('cy', dy);
+            if (dy >= 210) {
+              clearInterval(fallTimer);
+              drop.remove();
+              // 汗水滲入土壤後點亮深根與枝葉
+              deepRoots.classList.remove('opacity-25');
+              deepRoots.classList.add('opacity-100');
+              extraLeaves.classList.remove('opacity-0');
+              extraLeaves.classList.add('opacity-100');
+            }
+          }, 20);
+
+          if (action === 'prune') {
+            showToast('✂️ 修剪去蕪存菁，老樹枝條更顯挺拔');
+          } else if (action === 'till') {
+            soilClods.setAttribute('transform', 'translate(0, -4)');
+            setTimeout(() => soilClods.setAttribute('transform', 'translate(0, 0)'), 250);
+            showToast('⛏️ 雙手翻動泥土，感受真實大地的呼吸');
+          } else if (action === 'fertilize') {
+            showToast('💧 汗水滴入泥土，與這片土地緊緊相連');
+          }
+        });
+      });
+
+      /* -------------------------------------------------------
+         7. 第四章互動：金句標記與明信片翻轉複製
+      ------------------------------------------------------- */
+      const toggleHighlightBtn = document.getElementById('toggle-highlight-btn');
+      const endingHighlight = document.getElementById('ending-highlight');
+      let isHighlighted = false;
+
+      toggleHighlightBtn.addEventListener('click', () => {
+        isHighlighted = !isHighlighted;
+        if (isHighlighted) {
+          endingHighlight.classList.add('highlight-phrase', 'font-bold');
+          toggleHighlightBtn.textContent = '✨ 取消金句標記';
+          playChime('A5');
+          showToast('已為你畫下全篇最深刻的成長感悟');
+        } else {
+          endingHighlight.classList.remove('highlight-phrase', 'font-bold');
+          toggleHighlightBtn.textContent = '✨ 標記全文核心金句';
+        }
+      });
+
+      const keepsakeWrapper = document.getElementById('keepsake-card-wrapper');
+      const keepsakeInner = document.getElementById('keepsake-card-inner');
+      const copyQuoteBtn = document.getElementById('copy-quote-btn');
+
+      keepsakeWrapper.addEventListener('click', (e) => {
+        if (e.target.closest('#copy-quote-btn')) return;
+        keepsakeInner.classList.toggle('rotate-y-180');
+        playChime('G5');
+      });
+
+      copyQuoteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const quoteText = '原來，最深刻的成長往往隱匿於最平淡的日常之中；唯有腳踏實地地耕耘，甘甜的果實才會在生命的枝頭靜靜熟成。';
+        const tempInput = document.createElement('textarea');
+        tempInput.value = quoteText;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        playChime('C6');
+        showToast('已複製盛夏結語金句，快去分享吧！');
+      });
+    });
+  </script>
+</body>
+</html>
